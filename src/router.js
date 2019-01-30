@@ -1,3 +1,4 @@
+// router is basically just navigation
 import Vue from 'vue'
 import Router from 'vue-router'
 import Skills from './components/Skills.vue'

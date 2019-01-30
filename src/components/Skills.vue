@@ -1,8 +1,8 @@
 <template>
   <!--In templates, can put html, vue interpolation and vue directives-->
-  <div class="hello">
+  <div class="hello" onload="getItemsFromFirebase()">
     <div class="holder">
-      <form @submit.prevent="addSkill">
+      <form @submit.prevent="addItemToListAndDB">
         <input
           type="text"
           placeholder="Enter a skill you have..."
@@ -37,33 +37,91 @@
 </template>
 
 <script>
+import db from "./firebaseInit";
 export default {
   name: "Skills",
   data() {
     return {
-      skill: "",
-      skills: [
-        { skill: "Vue.js" },
-        { skill: "Front end dev" },
-        { skill: "nice" }
-      ]
+      skill: "", /// current item user will enter
+      skills: [] // empty array for the entire list
     };
   },
   methods: {
-    addSkill() {
+    getItemsFromFirebase() {
+      db.collection("itemsToDo")
+        .get()
+        .then(querySnapshot => {
+          this.loading = false;
+          querySnapshot.forEach(doc => {
+            // iterating through all docs in the database
+            let data = {
+              skill: doc.data().listItem
+            };
+            this.skills.push(data);
+          });
+        });
+    },
+    addItemToListAndDB() {
       this.$validator.validateAll().then(result => {
         if (result) {
           // validation is sucessful
           this.skills.push({ skill: this.skill });
-          this.skill = "";
+          db.collection("itemsToDo")
+            .add({
+              listItem: this.skill,
+              slug: this.generateUUID()
+            })
+            .then(function(docRef) {
+              console.log("Document written with ID: ", docRef.id);
+            })
+            .catch(function(error) {
+              console.error("Error adding document: ", error);
+            });
+          this.skill = ""; // clear the user field
         } else {
-          console.log("not valid");
+          console.log("not valid"); // invalid input
         }
       });
     },
     remove(id) {
+      db.collection("itemsToDo")
+        .doc(getDocAtIndexAndDB(id))
+        .delete()
+        .then(function() {
+          console.log("Document successfully deleted!");
+        })
+        .catch(function(error) {
+          console.error("Error removing document: ", error);
+        });
       this.skills.splice(id, 1); // remove from the array
+    },
+    getDocAtIndexAndDB: function(indexNum) {
+      //TODO: chrome says this function is not defined
+      nameToRemove = this.skills[indexNum];
+      db.collection("itemsToDo")
+        .get()
+        .then(querySnapshot => {
+          this.loading = false;
+          querySnapshot.forEach(doc => {
+            if (nameToRemove == doc.data().listItem) return doc.id;
+          });
+        });
+    },
+    generateUUID() {
+      let d = new Date().getTime();
+      let uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+        /[xy]/g,
+        function(c) {
+          let r = (d + Math.random() * 16) % 16 | 0;
+          d = Math.floor(d / 16);
+          return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+        }
+      );
+      return uuid;
     }
+  },
+  beforeMount() {
+    this.getItemsFromFirebase();
   }
 };
 </script>
