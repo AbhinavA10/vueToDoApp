@@ -5,7 +5,7 @@
     Compononents are custom elements
     -->
     <nav>
-      <router-link to="/">Home</router-link>
+      <router-link to="/">To Do List</router-link>
       <router-link to="/about">About</router-link>
     </nav>
     <router-view/>
@@ -13,12 +13,12 @@
 </template>
 
 <script>
-import Skills from "./components/Skills.vue";
+import ListAppPage from "./components/ListAppPage.vue";
 
 export default {
   name: "app",
   components: {
-    Skills
+    ListAppPage
   }
 };
 </script>

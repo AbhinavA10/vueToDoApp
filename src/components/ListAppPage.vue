@@ -1,21 +1,21 @@
 <template>
-  <!--In templates, can put html, vue interpolation and vue directives-->
+  <!--In templates, can put html, vue interpolation ({{stuff}})  and vue directives-->
   <div class="hello" onload="getItemsFromFirebase()">
     <div class="holder">
-      <form @submit.prevent="addItemToListAndDB">
+      <form @submit.prevent="addItemToListAndFirestore">
         <input
           type="text"
-          placeholder="Enter a skill you have..."
-          v-model="skill"
+          placeholder="Enter a pending task..."
+          v-model="itemName"
           v-validate="'min:3'"
-          name="skill"
+          name="itemName"
         >
         <transition
           name="alert-in"
           enter-active-class="animated flipInX"
           leave-active-class="animated flipOutX"
         >
-          <p class="alert" v-if="errors.has('skill')">{{errors.first('skill')}}</p>
+          <p class="alert" v-if="errors.has('itemName')">{{errors.first('itemName')}}</p>
         </transition>
       </form>
       <ul>
@@ -24,26 +24,27 @@
           enter-active-class="animated bounceInUp"
           leave-active-class="animated bounceOutDown"
         >
-          <li v-for="(data, index) in skills" :key="index+0">
-            {{data.skill}}
-            <i class="fa fa-minus-circle" v-on:click="remove(index)"></i>
+          <li v-for="(data, index) in localList" :key="index+0">
+            {{data.itemName}}
+            <!--  data is the object, .itemName is the string in the object -->
+            <i class="fa fa-trash" v-on:click="remove(index)"></i>
           </li>
         </transition-group>
       </ul>
-      <p>These are the skills that you possess.</p>
+      <p>This is your current to-do list.</p>
     </div>
-    <!--the v-on is a vue-directive-->
+    <!-- A v-on type things are a vue-directive-->
   </div>
 </template>
 
 <script>
 import db from "./firebaseInit";
 export default {
-  name: "Skills",
+  name: "ListAppPage",
   data() {
     return {
-      skill: "", /// current item user will enter
-      skills: [] // empty array for the entire list
+      itemName: "", /// current item user will enter
+      localList: [] // empty array for the entire list of item objects
     };
   },
   methods: {
@@ -51,41 +52,66 @@ export default {
       db.collection("itemsToDo")
         .get()
         .then(querySnapshot => {
+          // querySnapshot is the firebase object for the database as it is when this function is called
+          // https://firebase.google.com/docs/reference/js/firebase.firestore.QuerySnapshot
           this.loading = false;
           querySnapshot.forEach(doc => {
             // iterating through all docs in the database
             let data = {
-              skill: doc.data().listItem
+              // our own custom object
+              idInFirestore: doc.id,
+              itemName: doc.data().listItem
             };
-            this.skills.push(data);
+            this.localList.push(data);
           });
+          console.log(querySnapshot.docs[1].data()); // gets 1st doc from firebase collection
+          for (var item in this.localList) {
+            console.log(this.localList[item]);
+          }
         });
     },
-    addItemToListAndDB() {
+    addItemToListAndFirestore() {
       this.$validator.validateAll().then(result => {
         if (result) {
           // validation is sucessful
-          this.skills.push({ skill: this.skill });
+          this.localList.push({ itemName: this.itemName });
           db.collection("itemsToDo")
             .add({
-              listItem: this.skill,
+              listItem: this.itemName,
               slug: this.generateUUID()
             })
             .then(function(docRef) {
-              console.log("Document written with ID: ", docRef.id);
+              console.log("Document written to firestore with ID: ", docRef.id);
             })
             .catch(function(error) {
-              console.error("Error adding document: ", error);
+              console.error("Error adding document to firestore: ", error);
             });
-          this.skill = ""; // clear the user field
+          this.itemName = ""; // clear the user field
         } else {
           console.log("not valid"); // invalid input
         }
       });
     },
-    remove(id) {
+    /*
+    getDocAtIndexAndDB(nameToRemove) {
+      //TODO: chrome says this function is not defined
       db.collection("itemsToDo")
-        .doc(getDocAtIndexAndDB(id))
+        .get()
+        .then(querySnapshot => {
+          this.loading = false;
+          querySnapshot.forEach(doc => {
+            console.log(doc.data().listItem);
+            if (nameToRemove == doc.data().listItem) return doc.id;
+          });
+        });
+    },
+    */
+
+    remove(id) {
+      //console.log(this.localList[id]);
+      db.collection("itemsToDo")
+        .doc(this.localList[id].idInFirestore) //.doc("macWrmsjwtEJctYShm7g") //getDocAtIndexAndDB(this.localList[id].itemName)
+        // since we store the docId in our array of objects now, we can just use it from there instead of searching through Firebase for the document that contains our string
         .delete()
         .then(function() {
           console.log("Document successfully deleted!");
@@ -93,21 +119,10 @@ export default {
         .catch(function(error) {
           console.error("Error removing document: ", error);
         });
-      this.skills.splice(id, 1); // remove from the array
-    },
-    getDocAtIndexAndDB: function(indexNum) {
-      //TODO: chrome says this function is not defined
-      nameToRemove = this.skills[indexNum];
-      db.collection("itemsToDo")
-        .get()
-        .then(querySnapshot => {
-          this.loading = false;
-          querySnapshot.forEach(doc => {
-            if (nameToRemove == doc.data().listItem) return doc.id;
-          });
-        });
+      this.localList.splice(id, 1); // remove from the local array
     },
     generateUUID() {
+      // just a function to attach a identifier to each document in the collection in Firebase
       let d = new Date().getTime();
       let uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
         /[xy]/g,
@@ -121,6 +136,7 @@ export default {
     }
   },
   beforeMount() {
+    // as soon as the page starts to load, we will call this function
     this.getItemsFromFirebase();
   }
 };
