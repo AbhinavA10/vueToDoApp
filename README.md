@@ -1,5 +1,4 @@
 # Vue-todo-list-Web-app
-- https://vuetodoapp-af0fb.firebaseapp.com/#/
 ## Project setup
 ```
 npm install
