@@ -1,5 +1,5 @@
 # Vue-todo-list-Web-app
-- (https://vuetodoapp-af0fb.firebaseapp.com/#/)[https://vuetodoapp-af0fb.firebaseapp.com/#/]
+- https://vuetodoapp-af0fb.firebaseapp.com/#/
 ## Project setup
 ```
 npm install
@@ -29,4 +29,4 @@ npm run lint
 See [Configuration Reference](https://cli.vuejs.org/config/).
 
 ### Deploy on Firebase
-Look at this link: (https://medium.com/@ShayneOSullivan/deploy-a-vue-js-app-with-firebase-hosting-3fc420cf3998)[https://medium.com/@ShayneOSullivan/deploy-a-vue-js-app-with-firebase-hosting-3fc420cf3998]
+Look at this link: https://medium.com/@ShayneOSullivan/deploy-a-vue-js-app-with-firebase-hosting-3fc420cf3998
